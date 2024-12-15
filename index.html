@@ -1,0 +1,755 @@
+<!DOCTYPE html>
+<html lang="kr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>bbareunson_talk</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/110/three.min.js"></script>
+    <style>
+        body {
+            margin: 0;
+            font-family: 'Noto Sans', sans-serif;
+            background-color: #fffc97;
+            overflow: hidden;
+            font-weight: 700;
+        }
+
+        #main-container {
+            position: relative;
+            width: 100vw;
+            height: 100vh;
+        }
+
+        #left-panel {
+            position: absolute;
+            top: 180px;
+            left: 10px;
+            width: 70%;
+            height: 100%;
+            line-height: 5em;
+            display: flex;
+            flex-direction: column;
+            /*justify-content: center;*/
+            padding: 20px;
+            z-index: 10;
+            font-weight: 800;
+        }
+
+        .menu-item {
+            font-size: 6em;
+            color: #1027ff;
+            margin: 20px 0;
+            cursor: pointer;
+            transition: color 0.3s, transform 0.3s;
+        }
+
+        .menu-item:hover {
+            color: #ccccff;
+            font-size: 6.1em;
+
+        }
+
+        .menu-item.active {
+            transform: translateY(-5px);
+        }
+
+        .description {
+            font-size: 2.7em;
+            margin-top: -25px;
+            margin-left: 5px;
+            color: #1027ff;
+            display: none;
+        }
+
+        .description:hover {
+            font-size: 2.8em;
+
+        }
+
+        #modal {
+            position: fixed;
+            top: 0;
+            right: -41.5%;
+            width: 40%;
+            height: 100%;
+            background: #1027ff;
+            z-index: 20;
+            box-shadow: -3px 0px 10px rgba(0, 0, 0, 0.3);
+            transition: right 0.5s;
+            overflow-y: auto;
+            overflow-x: hidden;
+            padding: 20px;
+            font-family: 'Noto Sans', sans-serif;
+            color:#fffc97
+            
+        }
+
+        #modal.open {
+            right: 0;
+        }
+
+
+        #modal-close:hover {
+            scale: 1.3;
+        }
+
+        #modal-content {
+            padding: 20px;
+            font-size: 1.5em;
+            color: #fffc97;
+            line-height: 1.5;
+            max-height: calc(100% - 40px);
+            overflow-y: auto;
+        }
+
+        #modal-header {
+            display: none;
+            position: sticky;              /* 스크롤 시 상단에 고정 */
+            top: 0;                       /* 화면 최상단 */
+            right: 0%;                      /* 모달창 좌측과 맞춤 */
+            width: 100%;                  /* 모달창의 전체 너비 */
+            background-color: #1027ff;    /* 고정 박스 배경색 */
+            z-index: 25;                  /* 모달 내용보다 위에 표시 */
+            padding: 10px 10px 20px 20px;                /* 상하좌우 여백 */
+            box-sizing: border-box;       /* 패딩 포함 너비 계산 */
+            justify-content: space-between; /* 좌우로 배치 */
+            align-items: center;          /* 세로 가운데 정렬 */
+            color: #fffc97;               /* 텍스트 색상 */
+            /* 구분선 조정 */
+            border-bottom: none; /* 기존 border 제거 */
+         }
+
+#modal-header::after {
+    content: "";                /* 빈 내용 생성 */
+    display: block;             /* 블록 요소로 추가 */
+    position: absolute;         /* 위치 고정 */
+    bottom: 0;                  /* 헤더의 하단에 위치 */
+    left: -20px;                    /* 좌측 정렬 */
+    height: 1px;                /* 구분선 높이 */
+    width: 120%;                /* 구분선 길이 */
+    background-color: #fffc97;  /* 구분선 색상 */
+}
+
+        #modal-title {
+            font-size: 2.5em;             /* 제목 글자 크기 */
+            font-weight: 600;             /* 글자 두께 */
+            margin: 0;                    /* 기본 여백 제거 */
+            /*letter-spacing: -2px;         /* 자간 */
+        }
+
+        #modal-close {
+            font-size: 2.5em;             /* 닫기 버튼 크기 */
+            background: none;             /* 배경 제거 */
+            border: none;                 /* 테두리 제거 */
+            color: #fffc97;               /* 버튼 색상 */
+            cursor: pointer;              /* 클릭 가능 커서 */
+            z-index: 26;                  /* 모달 제목보다 위 */
+        }
+
+        .modal-body {
+            margin-top: 30px;
+            font-weight: 600;
+            max-width: 500px;
+            text-align: left;
+            line-height: 1.5em;
+        }
+
+        .modal-body img {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px 0;
+            display: block;
+        }
+
+        .modal-body video {
+            width: 100%;
+            max-width: 800px;
+            margin: 20px 0;
+            display: block;
+        }
+
+        .horizontal-scroll {
+    display: flex; /* Flexbox로 가로 배치 */
+    gap: 10px; /* 이미지 간격 */
+    overflow-x: scroll; /* 가로 스크롤 활성화 */
+    scroll-behavior: smooth; /* 부드러운 스크롤 */
+    padding-bottom: 10px; /* 스크롤바와 이미지 간격 */
+}
+/*이미지들 가로 세로 규격 맞출때 확인*/
+.horizontal-scroll img {
+    flex-shrink: 0; /* 이미지를 고정 크기로 설정 */
+    width: auto; /* 이미지 너비 조정 */
+    height: 400px; /* 비율 유지 */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* 그림자 효과 */
+    transition: transform 0.3s;
+}
+
+.horizontal-scroll video {
+    flex-shrink: 0; /* 비디오를 고정 크기로 설정 */
+    width: auto; /* 비디오 너비 조정 */
+    height: 400px; /* 비율 유지 */
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1); /* 그림자 효과 */
+    transition: transform 0.3s;
+}
+
+.caption {
+    font-size: 0.7em;  /* 캡션의 글자 크기를 작게 설정 */
+    color: #ddda85;   /* 캡션 색상 (적당히 눈에 덜 띄는 톤) */
+    text-align: left; /* 캡션을 가운데 정렬 */
+    margin-top: 0%;   /* 이미지와 캡션 사이 간격 */
+    font-style: italic; /* 기울임 글씨로 캡션 느낌 강화 */
+}
+
+.subtitle {
+    font-size: 1.1em;
+    color: #fffc97;   
+    text-align: left;         /* 캡션을 왼쪽 정렬 */
+    text-decoration: underline; 
+    text-decoration-thickness: 1px; /* 언더라인 두께를 얇게 설정 */
+    text-underline-offset: 2px;     /* 언더라인을 글자 아래로 약간 이동 */
+}
+
+
+        canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 0;
+        }
+
+        .trail-dot {
+    position: absolute;
+    z-index: 21;
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background-color: #ccccff;
+    pointer-events: none;
+    animation: fade-out 1s forwards;
+}
+
+@keyframes fade-out {
+    from {
+        opacity: 1;
+        transform: scale(1);
+    }
+    to {
+        opacity: 0;
+        transform: scale(0.5);
+    }
+}
+
+#fixed-header {
+    position: fixed;
+    bottom: 10px;
+    left: 10px;
+    width: 100%;
+    height: 50px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    /*background: rgba(255, 255, 255, 0.8); /* 약간 투명한 배경 */
+    padding: 0 20px;
+    /*box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1); /* 아래 그림자 */
+    z-index: 13; /* 항상 상단에 표시되도록 */
+}
+
+#header-left {
+    font-size: 1.5em;
+    font-weight: 600;
+    color: #1027ff;
+}
+
+#header-right {
+    font-size: 1.5em;
+    font-weight: 600;
+    color: #1027ff;
+    margin-right: 60px; /* 오른쪽에 여백 추가 */
+}
+
+#header-middle {
+    font-size: 1.5em;
+    font-weight: 600;
+    color: #1027ff;
+    margin-right: 60px; /* 오른쪽에 여백 추가 */
+}
+
+@media (max-width: 700px) {
+    body {
+        font-size: 14px; /* 전체 글자 크기 축소 */
+        font-weight: 400; /* 가독성을 위해 폰트 두께 조정 */
+        overflow: auto; /* 스크롤 가능하도록 변경 */
+    }
+
+    #main-container {
+        width: 100vw;
+        height: auto; /* 세로 스크롤을 허용 */
+    }
+
+    #left-panel {
+        top: 50px; /* 패널 위치 조정 */
+        left: 5px; /* 좌측 여백 조정 */
+        width: 90%; /* 패널 너비 조정 */
+        padding: 10px; /* 패딩 축소 */
+    }
+
+    .menu-item {
+        font-size: 2em; /* 메뉴 아이템 글자 크기 축소 */
+        margin: 1px 0; /* 여백 조정 */
+    }
+
+    .menu-item:hover {
+        font-size: 2.1em; /* 호버 시에도 크기 조정 */
+    }
+
+    .description {
+        font-size: 1.2em; /* 설명 글자 크기 축소 */
+        margin-top: 0; /* 여백 제거 */
+    }
+
+    .description:hover {
+        font-size: 1.3em;
+
+    }
+
+    #modal {
+        width: 90%; /* 모달 너비를 화면 전체로 확장 */
+        right: -100%; /* 숨겨진 상태 */
+        padding: 10px; /* 패딩 축소 */
+    }
+
+    #modal.open {
+        right: 0; /* 모달이 열릴 때 화면에 표시 */
+    }
+
+    #modal-header {
+        padding: 10px; /* 헤더 패딩 축소 */
+    }
+
+    #modal-title, #modal-close {
+        font-size: 1.8em; /* 제목과 닫기 버튼 크기 축소 */
+    }
+
+    .modal-body {
+        margin-top: 10px; /* 모달 내부 여백 축소 */
+        font-size: 1em; /* 본문 글자 크기 조정 */
+        max-width: 100%; /* 너비 조정 */
+    }
+
+    .modal-body img,
+    .modal-body video {
+        height: auto; /* 이미지 및 비디오 비율 유지 */
+        max-height: 250px; /* 최대 높이 설정 */
+    }
+
+    .horizontal-scroll img,
+    .horizontal-scroll video {
+        height: 200px; /* 스크롤 이미지 및 비디오 높이 축소 */
+    }
+
+    .caption {
+        font-size: 0.6em; /* 캡션 글자 크기 축소 */
+        margin-top: 2px; /* 여백 조정 */
+    }
+
+    #fixed-header {
+        bottom: 5px; /* 고정 헤더 위치 조정 */
+        height: 40px; /* 헤더 높이 축소 */
+        padding: 0 10px; /* 패딩 축소 */
+    }
+
+    #header-left, #header-right, #header-middle {
+        font-size: 0.5em; /* 고정 헤더 글자 크기 축소 */
+        margin-right: 2px; /* 여백 축소 */
+    }
+
+    canvas {
+        display: none; /* 작은 화면에서는 캔버스 숨김 */
+    }
+}
+
+
+    </style>
+</head>
+<body>
+    <div id="fixed-header">
+        <div id="header-left">2024 서울시립대학교 시각디자인전공</div>
+        <div id="header-middle">2024년 10월 28일, 14:00, 조형관 414호</div>
+        <div id="header-right">2021720027 최영준</div>
+
+    </div>
+    
+    <div id="main-container">
+        <canvas id="particle-canvas"></canvas>
+        <div id="left-panel">
+            <div class="menu-item" onclick="toggleDescription(1)">시각디자인현장이슈</div>
+            <div class="description" id="desc-1" onclick="showModal(1)">INTRODUCE</div>
+            <div class="menu-item" onclick="toggleDescription(2)">빠른손 디자이너</div>
+            <div class="description" id="desc-2" onclick="showModal(2)">WORK</div>
+            <div class="menu-item" onclick="toggleDescription(3)">목적 있는 움직임</div>
+            <div class="description" id="desc-3" onclick="showModal(3)">ABOUT THE TALK</div>
+        </div>
+    </div>
+
+    <div id="modal">
+        <div id="modal-header">
+            <h1 id="modal-title"></h1>
+            <button id="modal-close" onclick="closeModal()">⊗</button>
+        </div>
+        <div id="modal-content">
+            <div class="modal-body" id="modal-body"></div>
+        </div>
+    </div>
+
+    <script>
+        // 모달 데이터를 정의
+const modalData = {
+    1: {
+        title: "INTRODUCE",
+        body: `
+            <p>이 사이트는 시각디자인현장이슈 수업의 일환으로 빠른손 디자이너의 특강을 기록하는 과정에서 제작되었습니다.
+            특강을 듣지 않았어도 해당 사이트를 통해 내용을 볼 수 있도록 만들었습니다. 해당 디자이너의 작업 특성과 매체에 따른 다양한 구동에 초점을 두고 작업한 기말 특강 기록물 작업입니다.</p>
+            <img src="talk1.jpeg" alt="Introduce Image">
+            <p>2024년 10월 28일, 14:00, 조형관 414호에서 진행되었던 특강입니다.</p>
+        `
+    },
+    2: {
+        title: "WORK",
+        body: `
+            <p>빠른손 디자이너(김도현)의 연사 중 소개한 작업물과 설명입니다.</p>
+            <p class ="subtitle">KEY Tongue Tied 프로모션 웹사이트</p>
+            <div class="horizontal-scroll">
+                <img src= "D1.jpg" alt="Work Image">
+                <img src= "D2.jpg" alt="Work Image">
+                <img src= "D3.jpg" alt="Work Image">
+                <img src= "D4.jpg" alt="Work Image">
+                <video src="KEYDesktop.mp4" controls>
+                Your browser does not support the video tag.
+            </video>
+            </div>
+            <p class="caption">데스크탑 ver</p>
+            <div class="horizontal-scroll">
+                <img src= "M1.jpg" alt="Work Image">
+                <img src= "M2.jpg" alt="Work Image">
+                <img src= "M3.jpg" alt="Work Image">
+                <img src= "M4.jpg" alt="Work Image">
+                <video src="KEYMobile.mp4" controls>
+                Your browser does not support the video tag.
+            </video>
+            </div>
+            <p class="caption">모바일 ver</p>
+            <br><br>
+            <p class ="subtitle">Minho Call Back 프로모션 웹사이트</p>
+            <div class="horizontal-scroll">
+                <img src= "Minho1.jpg" alt="Work Image">
+                <img src= "Minho2.jpg" alt="Work Image">
+            </div>
+            <br><br>
+            <p class ="subtitle">B.DANCE SEOUL 키비주얼 디자인</p>
+            <div class="horizontal-scroll">
+                <video src="bdance1.mp4" controls>
+                Your browser does not support the video tag.
+            </video>
+                <img src= "bdance2.jpg" alt="Work Image">
+                <video src="bdance3.mp4" controls>
+                Your browser does not support the video tag.
+            </video>
+            </div>
+            <p>올해 여름에 노들섬에서 열렸던 비댄스서울 키비주얼 디자인입니다. 이번에 이름까지 바꾸면서 크게 개편을 하다보니 그 바뀌는 컨셉을 잘 보여줄 수 있으면서도 시각적으로 강렬해야 했어요. 브레이크 댄스나 비보잉, 배틀 등 댄스 분야의 전반적인 문화와 함께 스트리트 컬쳐를 접목하는 것이 큰 주제였는데요. 댄스가 중요한 부분을 차지하기 때문에 글자 자체가 리듬감과 춤이라는 걸 보여줄 수 있도록 움직이게 디자인했습니다. 그리고 스트리트 컬쳐를 상징하는 그래피티가 꼭 들어가야 했어서 글자를 그리고 산세리프 서체와 함께 병기하여 다양한 연령층을 포괄할 수 있도록 했습니다.</p>
+            <br><br>
+            <p class ="subtitle">Scrollable Typefaces</p>
+                <video src="scroll.mp4" controls>
+                Your browser does not support the video tag.
+            </video>
+            <p>그리고 특정 매체에서만 사용할 수 있는 움직임을 사용한 예시인데요. 스크롤러블 타입페이스입니다. 이 프로젝트도 대학원 때 스케치 수준으로 했었던 프로젝트인데, 올해 초에 글자를 완성하고 실제로 사용할 수 있도록 웹사이트에서 구현했습니다. 스크롤 바는 전체 페이지의 높이에 따라 길이가 달라지곤 하는데요, 이러한 가변성에 대해 생각해보다가 가변? 가변서체? 이런 식으로 이어져서 스크롤바로 만들어진 서체를 개발해보고 싶었어요. 그래서 웹사이트에 들어가면 타이핑도 가능하고, 실제로 스크롤 바를 움직일 수도 있게 했습니다.</p>
+            <br><br>
+            <p class ="subtitle">SM Jazz Trio 로고 디자인</p>
+            <div class="horizontal-scroll">
+                <img src= "SM.jpg" alt="Work Image">
+                <video src="SM.mp4" controls>
+                Your browser does not support the video tag.
+            </video></div>
+            <p>다음은 결과물을 홍보하기에 효과적인 움직임을 고안해본 건데요. SM Jazz Trio 로고 디자인입니다. 재즈 드럼, 재즈 피아노, 재즈 콘트라베이스 연주자 세 명이 모여 만들어진 재즈 아티스트 그룹의 로고 디자인을 맡게 되었는데요. 사실 로고 디자인이 생각보다 인스타그램에 업로드할 때 제가 생각하기에는 좀 심심하다는 느낌이 있어요. 멈춰 있고, 잘 정돈된 하나의 심볼이나 레터가 있거나 그것이 적용된 사례들을 모아서 보여주는 것에 그치는 편이 많아 보였거든요. 브랜딩 작업을 업로드 하시는 분들을 참고했을 때, 이러한 응축된 것들이나 키워드 들을 선보일 때 영상을 많이 사용하더라고요. 그래서 로고를 선보일 때에도 이렇게 영상을 활용하면 좋겠다고 생각했었어요. 특히 심볼은 말 그대로 무언가를 상징하는 그래픽이다보니 수동적인 매체 사용 환경에서 떠먹여줄 수 있어야 한다고 생각해요. 그래서 이목을 끄는 동시에 그 과정에서 내용을 알아볼 수 있도록 영상을 기획해서 업로드 했습니다. 공식 영상이 아니라 저희 인스타그램에 업로드 하기 위해 제가 개인적으로 만든 영상이에요.
+            </p>
+            <br><br>
+            <p class ="subtitle">아뜰리에 광화 로고 디자인</p>
+            <div class="horizontal-scroll">
+                <video src="gwanghwa1.mp4" controls>
+                Your browser does not support the video tag.
+                </video>
+                <img src= "gwanghwa1.jpg" alt="Work Image">
+                <img src= "gwanghwa2.jpg" alt="Work Image">
+                <img src= "gwanghwa3.jpg" alt="Work Image">
+                </div>
+            <p>비슷한 양상의 홍보 게시물 영상 작업인데요. 아뜰리에 광화 로고 디자인입니다. 세종문화회관에서 미디어 파사드를 선보이는 프로젝트의 로고인데요. 미디어 파사드의 특징을 반영한 디자인을 더 잘 보여주고 싶어서 마치 쇼케이스 영상처럼 기획해 업로드 했었어요. 여기에 나오는 문구도 제가 작성해서 영상으로 만들었었어요. 디자인 의도를 드러내는 키워드들을 잘 보여줄 수 있으면서도 역동적인 트랜지션을 활용해 시선을 뺐고자 했습니다.</p>
+            <br><br>
+            <p class ="subtitle">2023 세종체임버시리즈 키비주얼 디자인</p>
+            <div class="horizontal-scroll">
+                <img src= "sejong.jpg" alt="Work Image">
+                <video src="sejong.mp4" controls>
+                Your browser does not support the video tag.
+            </video></div>
+            <p>그리고 키비주얼 디자인도 이렇게 영상으로 기획해 홍보하기도 했었습니다. 2023 세종체임버시리즈의 키비주얼 디자인 프로젝트 사례인데요. 메인 키비주얼 포스터는 이렇게 생겼습니다. 소나타 형식이 커다란 컨셉이었어서 소나타 형식을 공부해보니 4악장으로 구성되어 있더라고요. 그래서 이를 시각적으로 드러내고, 다루던 시대가 피아노가 오케스트라에서 중요한 역할을 맡기 시작했을 때의 곡들을 연주하는 시즌이었어서 피아노 건반 형태가 잘 보일 수 있도록 했습니다.</p>
+            <p>그리고 제목 부분의 타이포그래피에서 서체를 섞은 것도 이 소나타 형식이 두 가지 대조되는 주제를 가지고 있다고 하여 유려한 서체와 고딕, 산세리프 서체를 섞어서 병기했습니다. 그래서 이렇게 섞은 서체로 구성된 제목과 네 가지 형식을 시각적으로 잘 보여줄 수 있도록 영상을 제작했습니다.</p>
+            <br><br>
+            <p class ="subtitle">한섬 2023 VIP 카드 패키지</p>
+            <div class="horizontal-scroll">
+                <img src= "vipcard.jpg" alt="Work Image">
+                <video src="vipcard.mp4" controls>
+                Your browser does not support the video tag.
+            </video></div>
+            <p>마지막으로 소개드릴 프로젝트는 디지털 매체는 아닌데, 디지털 매체를 인쇄 매체에서 구현해야만 했던 상황이었어서 인쇄매체에서의 움직임을 만들었던 프로젝트인 한섬 2023 VIP 카드 패키지 디자인 프로젝트에 대해 이야기 드리도록 하겠습니다. 손선경 작가의 애니메이션 영상이 먼저 있었고, 이를 카드와 패키지 디자인에 녹여야 한다고 전달 받았었어요. 그래서 애니메이션을 어떻게 인쇄매체에 녹일 수 있지? 생각해보다가 무아레 패턴 애니메이션이라는 걸 우연히 보게 되었어요.</p>
+            
+            <p>무아레 패턴 애니메이션은 투명한 판 위에 줄무늬로 인쇄되어 있고, 그 밑에는 그 줄무늬 선보다 얇은 선으로 구성된 여러 시퀀스들을 겹쳐 놓음으로써 이처럼 움직이는 것과 같은 착시를 만들어내는 것이었는데요. 영상에서 가장 중요한 역할을 하는 새가 날아가는 시퀀스를 이와 같이 움직이면서 사용할 수 있도록 제안드렸고, 다행히도 아이디어가 통과되고 견적도 통과되어 이렇게 잘 마무리가 되었습니다.</p>
+
+            `
+    },
+    "2-1": {
+            title: "ABOUT",
+            body: `
+                <p>스튜디오 빠른손은 김도현 디자이너가 운영하는 그래픽 디자인, 웹 개발 스튜디오입니다. 빠른손(김도현)은 그래픽 디자인과 웹 개발을 함께 하고 있습니다. 키비주얼, 아이덴티티, 포스터, 책, 모션 그래픽, 웹사이트 등 다양한 매체들을 디자인의 도구로 적절히 활용하고자 합니다. 현재 계원예술대학교 시각디자인과에서 디지털 매체와 관련한 수업을 하고 있습니다.</p>
+                <p>•ORGD 2024 ⟪굿 디자이너⟫에 기획으로 참여, 2024
+<br>•KEY Single 'Tongue Tied' 프로모션 웹 디자인 & 개발, UI 디자인, 결과 이미지 디자인, 2024
+<br>•국립한글박물관 ⟪사투리는 못 참지!⟫에 ⟨여우난곬족⟩ 작품으로 참여, 2024
+<br>•B.DANCE SEOUL(서울비댄스페스티벌) 키비주얼 디자인, 2024
+<br>•국립현대미술관 영문 뉴스레터 광고 모션 그래픽과 키비주얼 디자인, 2024
+<br>•⟨1000 Posters 1000 Trends⟩ 리서치, 웹 디자인과 개발, ⟪100 Films 100 Posters⟫, 2024
+</p>
+         <p>
+           <a href="https://bbareunson.com/" target="_blank" style="text-decoration: underline; color: inherit; font-weight: 600;">
+        스튜디오 빠른손 홈페이지 바로가기 ✍️
+           </a>
+         </p>
+
+            `
+    },
+    3: {
+        title: "ABOUT THE TALK",
+        body: `
+            <p class ="subtitle">다양한 매체에서의 움직임:
+             <br>디자인 작업을 하면서 의도하고 목적에 맞도록<br>설계하는 움직임들에 대한 이야기
+            </p>
+            <p>강연의 큰 주제<br>
+                1. 매체 속 움직임<br>
+                2. 디자이너의 움직임
+            </p>
+            <br>
+            <p class ="subtitle">매체란?</p>
+            <p>"커뮤니케이션에서 매체 또는 미디어(media)는 <br>의미론적 정보 또는 콘텐츠로 설명되는 포함된 주제를 저장하고 전달하는 데 사용되는 출구 또는 도구"</p>
+            <p>여기에서 중요한 키워드는 “의미론적 정보”, “콘텐츠”, “주제”를 “저장”, “전달” 이라고 생각합니다.<br>디자인이란 무엇일까요? 제가 생각하는 디자인은 의뢰인에게 전달 받은 의미론적 정보나 콘텐츠, 주제를 이와 같은 매체에 저장하여 이를 많은 사람들에게 전달하기 위한 것이라고 생각합니다. 이를 잘 전달하기 위해 매체의 특성을 파악하는 것도 꽤나 중요하다고 생각하고, 또한 사람들이 주로 사용하는 매체가 무엇인지, 그리고 그 매체를 어떻게 사용하는지도 인지하고 있다면 더욱 효과적으로 메시지를 전달할 수 있다고 생각해요.</p>
+            <p>인스타그램, 쇼츠 등의 발달로 빠른 속도와 수동적인 매체의 사용은 아무래도 더 시각적으로 자극적인 것들이 인기를 끌게 만들어 3D 질감이나 모션 그래픽과 같은 독특하거나 신기한, 혹은 움직이게 만들어 시선을 붙잡게 하는 것 같습니다.</p>
+            <p>이러한 매체의 변화로 디자인 분야(K-pop)에서도 여러 사례가 등장합니다.</p>
+            <div class="horizontal-scroll">
+                
+                <img src="ex1.jpg" alt="About Image">
+                <img src="ex2.jpg" alt="About Image">
+                <img src="ex3.jpg" alt="About Image">
+            </div>
+            <p class="caption">샤이니 키 3D 칵테일 잔, ITZY GOLD앨범 모션, 에스파 3차원 웹사이트 순</p>
+            <br><br>
+            <p>그렇다면, 왜 움직이게 만들까?</p>
+            <p class ="subtitle">1. 흥미 유발 및 이탈률 감소</p>
+            <p>멈춰 있는 것보다는 움직이는 것에 시선이 더 가는.
+                <br>오른쪽에 더 시선이 가지 않나요? 계속해서 변하니까
+            </p>
+            <div class="horizontal-scroll">
+                <img src="grand.jpg" alt="About Image">
+                <video src="grand.mp4" controls>
+                Your browser does not support the video tag.
+            </video>
+            </div>
+            <p class="caption">빠른손, 그랜드 아트 살롱 포스터 작업, 2023</p>
+            <br>
+            <p class ="subtitle">2. 효과적인 메시지 전달</p>
+            <p>어떠한 주제인지에 따라 다르겠지만 디지털 매체는 소위 부유한 매체라고 불리기도 할만큼 쓸 수 있는 다양한 기술들이 집합되어 있기도 하잖아요. 그래서 인쇄 매체의 멈춰 있는 것들에 더해 소리나 영상, 실시간, GPS 등 다양한 기술을 활용하여 전하고자 하는 메시지에 부합한다면 더욱 효과적이라고 생각합니다.</p>
+            <p class ="subtitle">3. 결과물 홍보에 효과적</p>
+            <p>첫 번째랑 아마 이어질 것 같은데요. 시선을 붙잡을 수 있다는 점이 그 수많은 이미지들이 쌓여 있는 인스타그램 피드 안에서 잠시나마 머물게 할 수 있는 도구로써 움직임을 사용하고 있다고 생각합니다.</p>
+            <p class ="subtitle">4. 해당 매체만의 움직임을 활용하여 매체의 특장점을 강조
+                  -독특하고 새로운 경험 제공</p>
+            <video src="space.mp4" controls>
+                Your browser does not support the video tag.
+            </video>
+            <p class ="caption">모바일 디바이스에는 모두 X, Y, Z축의 각도 값을 실시간으로 반영하고 있는 자이로스코프 기능이 탑재되어 있는데요. 데스크톱에서는 이 기능을 사용할 수 없겠죠? 그래서 모바일에서만 작동 가능한 이러한 기능을 활용해 핸드폰 각도에 따라 글자의 그림자 위치가 달라지게 하는 작업을 만들 수 있었습니다.</p>
+            <p class ="subtitle">빠른손 디자이너의 이러한 매체의 움직임의 목적을 달성한, 달성하기 위한 프로젝트는 추가로 WORK 탭에서 보실 수 있습니다. </p>
+            <br>
+            <p>다음은 디자이너의 움직임입니다.</p>
+            <p class ="subtitle">디자이너란?</p>
+            <p>저는 간결하게 디자인 서비스를 제공하는 사람이라고 생각합니다. 여기에서 이 서비스는 우리가 실제로 제공하는 디자인 서비스도 있지만, 이 결과까지 가기 위한 서비스 서비스도 중요하게 생각합니다. 그래서 이러한 서비스들을 잘 제공하기 위해 제가 움직이고 있는 것들에 대해서 하나씩 말씀드리고 싶었어요.</p>
+            <br>
+            <p>서비스를 잘 제공하기 위한 움직임?</p>
+            <p class ="subtitle">비댄스서울 키비주얼 프로젝트</p>
+            <img src="bdanceD1.jpg" alt="About Image">
+            <p>먼저 아까 말씀드렸던 비댄스서울 키비주얼 프로젝트인데요. 이 프로젝트는 공공기관의 프로젝트였어요. 키 비주얼 작업을 자주 의뢰받는데 특히 공공기관에서 연락이 자주 와요. 그래서 파악해야 하는 것들이 있더라고요. 비단 공공기관 뿐만 아니라 다양한 회사의 형태들이 있지만 이와 같은 형태로 정보를 주고받습니다. 디자이너가 실무자에게 디자인을 전달하고, 이를 실무자와 한 팀에 있는 부장, 과장, 팀장과 이야기 나눈 후 최종 결정권자에게 보고를 하더라고요. 이러한 보고 체계에서 디자이너는 가장 끝에 있곤 합니다. 근데 이처럼 여러 단계를 거칠수록 오류나 오해가 생기더라고요. 그래서 어떻게 하면 이러한 오류를 줄일 수 있을지 고민하다가 먼저 제안서에서 시도해 본 방법이예요.</p>
+            <div class="horizontal-scroll">
+                <img src="jean1.png" alt="About Image">
+                <img src="jean2.png" alt="About Image"></div>
+                <p>실제 제안서를 캡쳐한 이미지인데요. 상단의 작은 글자에는 사업에 대한 개괄적인 설명, 즉 의뢰인 단체가 모두 이미 알고 있는 것들이지만 다시 언급해주어야 하는 부분에 대해서 적었어요. 그리고 아래에는 이를 가장 짧게 요약해 시각적 콘셉트를 어떻게 도출했는지 잘 보여줄 수 있도록 큰 크기의 글자로 강조했습니다. 그런데 이렇게 드려도 오해가 생길 수밖에 없었습니다. 시간이 흘러 디자인을 전달해야 할 때가 와서 우선 시안을 만들었죠.</p>
+            <div class="horizontal-scroll">
+                <img src="jean3.jpg" alt="About Image">
+                <img src="jean4.jpg" alt="About Image">
+                <img src="jean5.jpg" alt="About Image">
+            </div>
+            <p>그리고 이러한 상황에서 이 조직은 어떠한지 살펴보았었어요. 담당자와의 케미가 어느 정도 필요한 지점이긴 한데요. 아까 보여드렸던 의사결정 과정인데요. 여기에서 사실 실무자는 주로 전달을 맡습니다. 물론 위에서 말하는 모든 것들을 전달해주시는 분도 계시고, 이를 잘 정리하고 미리 쳐낼 것들을 쳐내주시는 분들도 계신데요. 그건 운에 맡겨야 하기 때문에 이러한 상황임을 언제나 인지하고 저는 이 담당 실무자 분께 유선 혹은 미팅을 통해 이처럼 한 팀이라는 걸 강조하기도 합니다. 우리는 위에 보고를 잘 해서 복잡하게 일을 만들지 않는 공동의 목표를 가진 하나의 팀이라는 뉘앙스로 이야기를 하기도 합니다. 따라서 이와 같은 조직도를 파악하고 실무자와 함께 이겨낼 수 있도록, 잘 설득할 수 있는 방법을 함께 고안하기 위해 이것저것 많이 하고 있는 것 같아요.</p>
+            <br>
+            <p>마지막으로는 여기 적혀 있는대로 (아주 드물지만 추천하고 싶지는 않지만 정말 좋은 기회와 추가 견적을 받을 수 있는 상태에서 더 나은 아이디어가 있다면) 제안해보는 경험도 있었어요. 앞에 있는 말들은 경험이 없는 디자이너 초년생 때 착취 혹은 무례한 일들을 겪었어서 정말 잘 판단해야 하기 때문에 추천을 드리지는 않는다고 말씀드리고 싶습니다. 하지만 진짜 좋은 기회라면, 이를 잘 판단할 수 있는 상태에서 제안하는 경우를 이야기하려 합니다.</p>
+            <div class="horizontal-scroll">
+                <video src="Jm.mp4" controls>
+                Your browser does not support the video tag.
+            </video>
+            <video src="Jd.mp4" controls>
+                Your browser does not support the video tag.
+            </video>
+            </div>
+            <p>처음에는 웹사이트의 메인 이미지를 디자인하는 프로젝트였어요. 그런데 이 서체가 한글 점자인 훈맹정음을 만든 분의 손글씨를 따온 서체여서 한글 점자가 서체 견본집의 컨셉이었거든요. 근데 이 점자가 손으로 만지는 문자이다보니 터치를 하면서 직접 이 서체를 경험하면 너무 찰떡이겠다 싶었어요. 그래서 저희가 오히려 역제안을 드렸죠. 적당한 가격은 아니었지만 그래도 작업이 가능한 비용이었기 때문에 이처럼 설득하고 기획부터 개발까지 모두 진행했었습니다. 그래서 매체를 잘 활용하는 동시에 주제도 잘 보여주었던 프로젝트 중 하나라고 생각해서 이 프로젝트를 소개드리고 싶었습니다. 한글의 점자는 초성, 중성, 종성으로 구분되어 읽을 수 있는데요, 처음 접속해서 초성의 점자를, 스와이프하여 중성, 종성의 초성을 맞추면 그 글자가 J소예체로 나타나게 됩니다.</p>
+            <p>이상으로 특강 기록을 마칩니다🫶</p>
+
+
+        `
+    }
+};
+
+    //설명을 토글하는 함수
+    function toggleDescription(id) {
+    const description = document.getElementById(`desc-${id}`);
+    const isVisible = description.style.display === 'block';
+
+    // 모든 설명 숨기기
+    document.querySelectorAll('.description').forEach(desc => desc.style.display = 'none');
+    document.querySelectorAll('.menu-item').forEach(item => item.classList.remove('active'));
+
+    // 클릭한 설명이 이미 보이는 경우 숨기고 종료
+    if (isVisible) {
+        description.style.display = 'none';
+        return;
+    }
+
+    // 클릭한 설명만 표시
+    description.style.display = 'block';
+    document.querySelector(`.menu-item:nth-child(${id * 2 - 1})`).classList.add('active');
+   // 빠른손 디자이너(WORK)에 ABOUT 추가
+   if (id === 2) {
+            const aboutDescription = document.createElement('div');
+            aboutDescription.className = 'description';
+            aboutDescription.style.display = 'block'; // 보이도록 설정
+            aboutDescription.textContent = modalData["2-1"].title; // ABOUT 제목 사용
+            aboutDescription.onclick = () => showModal("2-1"); // 클릭 시 모달 열기
+            description.after(aboutDescription); // WORK 밑에 추가
+        }
+    }
+
+
+        // 모달 열기
+function showModal(id) {
+    const modalTitle = document.getElementById('modal-title');
+    const modalBody = document.getElementById('modal-body');
+    const modalHeader = document.getElementById('modal-header');
+
+    // 모달 데이터 설정
+    const data = modalData[id];
+    modalTitle.innerText = data.title; // 제목 변경
+    modalBody.innerHTML = data.body;  // 내용 변경
+
+    // 모달 표시
+    document.getElementById('modal').classList.add('open');
+    modalHeader.style.display = 'flex'; // 헤더 박스 표시
+}
+
+// 모달 닫기
+function closeModal() {
+    const modalHeader = document.getElementById('modal-header');
+
+    document.getElementById('modal').classList.remove('open');
+    modalHeader.style.display = 'none'; // 헤더 박스 숨기기
+}
+
+        // Three.js particle setup
+        const canvas = document.getElementById('particle-canvas');
+        const renderer = new THREE.WebGLRenderer({ canvas, alpha: true });
+        renderer.setSize(window.innerWidth, window.innerHeight);
+        const scene = new THREE.Scene();
+        const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
+        camera.position.z = 50;
+
+        const particles = [];
+        const particleCount = 1000;
+        const particleMaterial = new THREE.PointsMaterial({ color: 0x1027ff, size: 0.9 });
+
+        for (let i = 0; i < particleCount; i++) {
+            const particle = new THREE.Vector3(
+                (Math.random() - 0.5) * 200,
+                (Math.random() - 0.5) * 200,
+                (Math.random() - 0.5) * 200
+            );
+            particles.push(particle);
+        }
+
+        const particleGeometry = new THREE.SphereGeometry(0.2, 16, 16).setFromPoints(particles);
+        const particleSystem = new THREE.Points(particleGeometry, particleMaterial);
+        scene.add(particleSystem);
+
+        function animate() {
+            requestAnimationFrame(animate);
+            particleSystem.rotation.y += 0.001;
+            renderer.render(scene, camera);
+        }
+
+        animate();
+
+        window.addEventListener('mousemove', (e) => {
+            const x = (e.clientX / window.innerWidth - 0.5) * 2;
+            const y = -(e.clientY / window.innerHeight - 0.5) * 2;
+            particleSystem.rotation.x = y;
+            particleSystem.rotation.y = x;
+        });
+
+        let lastX = null; // 이전 X 좌표
+        let lastY = null; // 이전 Y 좌표
+
+function createTrailDot(x, y) {
+    const dot = document.createElement('div');
+    dot.className = 'trail-dot';
+    dot.style.left = `${x}px`;
+    dot.style.top = `${y}px`;
+
+    document.body.appendChild(dot);
+
+    // 점이 완전히 사라지면 DOM에서 제거
+    setTimeout(() => {
+        dot.remove();
+    }, 1000); // fade-out 애니메이션 시간과 동일하게 설정
+}
+
+// 두 좌표 사이에 중간 점을 추가하는 함수
+function interpolatePoints(x1, y1, x2, y2, density = 3) {
+    const points = [];
+    const deltaX = (x2 - x1) / density;
+    const deltaY = (y2 - y1) / density;
+
+    for (let i = 1; i <= density; i++) {
+        points.push({ x: x1 + deltaX * i, y: y1 + deltaY * i });
+    }
+    return points;
+}
+
+// 마우스 움직임 감지
+window.addEventListener('mousemove', (e) => {
+    const currentX = e.clientX;
+    const currentY = e.clientY;
+
+    // 이전 점 위치가 존재하는 경우 보간점 생성
+    if (lastX !== null && lastY !== null) {
+        const points = interpolatePoints(lastX, lastY, currentX, currentY, 10); // density = 점 간격 조정
+        points.forEach((point) => createTrailDot(point.x, point.y));
+    }
+
+    // 현재 점 생성 및 위치 업데이트
+    createTrailDot(currentX, currentY);
+    lastX = currentX;
+    lastY = currentY;
+});
+
+    </script>
+</body>
+</html>
